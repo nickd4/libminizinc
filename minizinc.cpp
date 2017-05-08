@@ -52,7 +52,11 @@ int main(int argc, const char** argv) {
     pFactoryCHUFFED( SolverFactory::createF_CHUFFED() );
 #endif
 #ifdef HAS_MIP
-  static unique_ptr<SolverFactory>
+  /* Nick has commented out the static storage class below, CPLEX 12.4 seems
+   * to crash inside CPXfreeprob() or CPXcloseCPLEX() if called from atexit()
+   * handler or similar, perhaps CPLEX needs the standard library operational
+   */
+  /*static*/ unique_ptr<SolverFactory>
     pFactoryMIP( SolverFactory::createF_MIP() );
 #endif
 
