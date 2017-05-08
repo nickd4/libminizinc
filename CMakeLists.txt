@@ -368,7 +368,7 @@ endif()
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G"Visual Studio 12 Win64")
   if(UNIX)
-    set(CPLEX_ARCH "x86-64_linux/static_pic")
+    set(CPLEX_ARCH "x86-64_sles10_4.1/static_pic") # Nick "x86-64_linux/static_pic")
 	set(CPLEX_LIB "cplex")
   endif(UNIX)
 

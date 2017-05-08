@@ -138,7 +138,7 @@ void MIP_cplex_wrapper::openCPLEX()
       the error message.  Note that CPXopenCPLEX produces no output,
       so the only way to see the cause of the error is to use
       CPXgeterrorstring.  For other CPLEX routines, the errors will
-      be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON.  */
+      be seen if the CPX_PARAM_SCREENOUTPUT indicator is set to CPX_ON.  */
    wrap_assert ( env, "Could not open CPLEX environment." );
    /* Create the problem. */
    lp = CPXcreateprob (env, &status, "MIP_cplex_wrapper");
@@ -146,7 +146,7 @@ void MIP_cplex_wrapper::openCPLEX()
       was available or there was some other problem.  In the case of
       failure, an error message will have been written to the error
       channel from inside CPLEX.  In this example, the setting of
-      the parameter CPXPARAM_ScreenOutput causes the error message to
+      the parameter CPX_PARAM_SCREENOUTPUT causes the error message to
       appear on stdout.  */
    wrap_assert ( lp, "Failed to create LP." );
 }
@@ -566,14 +566,14 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
      for (int i = 0; i < 3; ++i) {
        status = CPXaddfuncdest(env, chnl[i], nullptr, msgfunction);
      }
-//     status = CPXsetintparam(env, CPXPARAM_ScreenOutput,
+//     status = CPXsetintparam(env, CPX_PARAM_SCREENOUTPUT,
 //       fVerbose ? CPX_ON : CPX_OFF);  // also when flag_all_solutions?  TODO
 //     wrap_assert(!status, "  CPLEX Warning: Failure to switch screen indicator.", false);
    }
-   status = CPXsetintparam (env, CPXPARAM_MIP_Display,
+   status = CPXsetintparam (env, CPX_PARAM_MIPDISPLAY,
                             fVerbose ? 2 : 0);  // also when flag_all_solutions?  TODO
    wrap_assert(!status, "  CPLEX Warning: Failure to switch logging.", false);
-   status =  CPXsetintparam (env, CPXPARAM_ClockType, 1);            // CPU time
+   status =  CPXsetintparam (env, CPX_PARAM_CLOCKTYPE, 1);            // CPU time
    wrap_assert(!status, "  CPLEX Warning: Failure to measure CPU time.", false);
    status =  CPXsetintparam (env, CPX_PARAM_MIPCBREDLP, CPX_OFF);    // Access original model
    wrap_assert(!status, "  CPLEX Warning: Failure to set access original model in callbacks.", false);
@@ -589,35 +589,35 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       // Turn off CPLEX logging
 
    if (nThreads>0) {
-     status =  CPXsetintparam (env, CPXPARAM_Threads, nThreads);
-     wrap_assert(!status, "Failed to set CPXPARAM_Threads.", false);
+     status =  CPXsetintparam (env, CPX_PARAM_THREADS, nThreads);
+     wrap_assert(!status, "Failed to set CPX_PARAM_THREADS.", false);
    }
 
     if (nTimeout>0) {
-     status =  CPXsetdblparam (env, CPXPARAM_TimeLimit, nTimeout);
-     wrap_assert(!status, "Failed to set CPXPARAM_TimeLimit.", false);
+     status =  CPXsetdblparam (env, CPX_PARAM_TILIM, nTimeout);
+     wrap_assert(!status, "Failed to set CPX_PARAM_TILIM.", false);
     }
 
     if (nWorkMemLimit>0) {
-     status =  CPXsetdblparam (env, CPXPARAM_MIP_Limits_TreeMemory, nWorkMemLimit);
-     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_TreeMemory.", false);
+     status =  CPXsetdblparam (env, CPX_PARAM_TRELIM, nWorkMemLimit);
+     wrap_assert(!status, "Failed to set CPX_PARAM_TRELIM.", false);
     }
 
    if ( absGap>=0.0 ) {
-    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_AbsMIPGap, absGap);
-    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_AbsMIPGap.", false);
+    status =  CPXsetdblparam (env, CPX_PARAM_EPAGAP, absGap);
+    wrap_assert(!status, "Failed to set CPX_PARAM_EPAGAP.", false);
    }
    if (relGap>=0.0) {
-    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_MIPGap, relGap);
-    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_MIPGap.", false);
+    status =  CPXsetdblparam (env, CPX_PARAM_EPGAP, relGap);
+    wrap_assert(!status, "Failed to set CPX_PARAM_EPGAP.", false);
    }
    if (intTol>=0.0) {
-    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_Integrality, intTol);
-    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_Integrality.", false);
+    status =  CPXsetdblparam (env, CPX_PARAM_EPINT, intTol);
+    wrap_assert(!status, "Failed to set CPX_PARAM_EPINT.", false);
    }
 
-//    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_ObjDifference, objDiff);
-//    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_ObjDifference.", false);
+//    status =  CPXsetdblparam (env, CPX_PARAM_OBJDIF, objDiff);
+//    wrap_assert(!status, "Failed to set CPX_PARAM_OBJDIF.", false);
 
     
    /// Solution callback
@@ -640,14 +640,14 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       initnodeobjvalinfo (env, lp, &usercutinfo);
       /* Assure linear mappings between the presolved and original
           models */
-      status = CPXsetintparam (env, CPXPARAM_Preprocessing_Linear, 0);
+      status = CPXsetintparam (env, CPX_PARAM_PRELINEAR, 0);
       wrap_assert ( !status, "CPLEX: setting prepro_linear" );
       /* Turn on traditional search for use with control callbacks */
-      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
+      status = CPXsetintparam (env, CPX_PARAM_MIPSEARCH,
                                 CPX_MIPSEARCH_TRADITIONAL);
       wrap_assert ( !status, "CPLEX: setting traditional search" );
       /* Let MIP callbacks work on the original model */
-      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP,
+      status = CPXsetintparam (env, CPX_PARAM_MIPCBREDLP,
                                 CPX_OFF);
       wrap_assert ( !status, "CPLEX: setting callbacks to work on orig model" );
       /// And
@@ -666,14 +666,14 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       initnodeobjvalinfo (env, lp, &lazyconinfo);
       /* Assure linear mappings between the presolved and original
           models */
-      status = CPXsetintparam (env, CPXPARAM_Preprocessing_Linear, 0);
+      status = CPXsetintparam (env, CPX_PARAM_PRELINEAR, 0);
       wrap_assert ( !status, "CPLEX: setting prepro_linear" );
       /* Turn on traditional search for use with control callbacks */
-//       status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
+//       status = CPXsetintparam (env, CPX_PARAM_MIPSEARCH,
 //                                 CPX_MIPSEARCH_TRADITIONAL);
 //       wrap_assert ( !status, "CPLEX: setting traditional search" );
       /* Let MIP callbacks work on the original model */
-      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP,
+      status = CPXsetintparam (env, CPX_PARAM_MIPCBREDLP,
                                 CPX_OFF);
       wrap_assert ( !status, "CPLEX: setting callbacks to work on orig model" );
       /* Set up to use MIP lazyconstraint callback. The callback funtion
@@ -734,7 +734,8 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 
 void MIP_cplex_wrapper::setObjSense(int s)
 {
-  status = CPXchgobjsen (env, lp, -s);  // +1 for min in CPLEX
-  wrap_assert(!status, "Failed to set obj sense.");
+  /* CPXchgobjsen() has void return type in 12.4 */
+  /*status =*/ CPXchgobjsen (env, lp, -s);  // +1 for min in CPLEX
+  /*wrap_assert(!status, "Failed to set obj sense.");*/
 }
 
