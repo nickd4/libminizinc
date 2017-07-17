@@ -162,6 +162,9 @@ namespace MiniZinc {
     
     /// Return maximum allocated memory (high water mark)
     static size_t maxMem(void);
+
+    /// Force garbage collection, added by Nick for LCG-glucose backend
+    static void run(void);
   };
 
   /// Automatic garbage collection lock

@@ -797,6 +797,7 @@ namespace MiniZinc {
     void rehash(void);
   };
   /// \brief A variable declaration expression
+  class ConstraintI;
   class VarDecl : public Expression {
     friend class Let;
   protected:
@@ -806,6 +807,8 @@ namespace MiniZinc {
     Id* _id;
     /// Initialisation expression (can be NULL)
     Expression* _e;
+    /// Points to FlatZinc constraint, added by Nick for LCG-glucose backend
+    ConstraintI* _defined_by;
     /// Flattened version of the VarDecl
     WeakRef _flat;
     /// Integer payload
@@ -837,6 +840,10 @@ namespace MiniZinc {
     Expression* e(void) const;
     /// Set initialisation expression
     void e(Expression* rhs);
+    /// Access defining constraint, added by Nick for LCG-glucose backend
+    ConstraintI* defined_by(void) const;
+    /// Set defining constraint, added by Nick for LCG-glucose backend
+    void defined_by(ConstraintI* ci);
     /// Access flattened version
     VarDecl* flat(void) { return _flat() ? _flat()->cast<VarDecl>() : NULL; }
     /// Set flattened version

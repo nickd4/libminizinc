@@ -6210,7 +6210,9 @@ namespace MiniZinc {
                                 vd->ti()->ranges()[0]->type(),
                                 new SetLit(Location().introduce(),isv));
             ASTExprVec<TypeInst> ranges(r);
-            TypeInst* ti = new TypeInst(vd->ti()->loc(),vd->ti()->type(),ranges,vd->ti()->domain());
+            Type t = vd->ti()->type();
+            t.dim(1); // bug fix by Nick for LCG-glucose MZN solver
+            TypeInst* ti = new TypeInst(vd->ti()->loc(),t,ranges,vd->ti()->domain());
             vd->ti(ti);
           }
         }

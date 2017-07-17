@@ -393,6 +393,7 @@ namespace MiniZinc {
     _flag_2 = false;
     _ti = ti;
     _e = e;
+    _defined_by = 0;
     _id->type(type());
     _payload = 0;
     rehash();
@@ -408,6 +409,7 @@ namespace MiniZinc {
     _flag_2 = false;
     _ti = ti;
     _e = e;
+    _defined_by = 0;
     _id->type(type());
     _payload = 0;
     rehash();
@@ -423,6 +425,7 @@ namespace MiniZinc {
     _flag_2 = false;
     _ti = ti;
     _e = e;
+    _defined_by = 0;
     _id->type(type());
     _payload = 0;
     rehash();
@@ -441,6 +444,7 @@ namespace MiniZinc {
     _flag_2 = false;
     _ti = ti;
     _e = e;
+    _defined_by = 0;
     _id->type(type());
     _payload = 0;
     rehash();
@@ -454,6 +458,16 @@ namespace MiniZinc {
   inline void
   VarDecl::e(Expression* rhs) {
     _e = rhs;
+  }
+  
+  inline ConstraintI*
+  VarDecl::defined_by(void) const {
+    return _defined_by;
+  }
+
+  inline void
+  VarDecl::defined_by(ConstraintI* ci) {
+    _defined_by = ci;
   }
   
   inline bool

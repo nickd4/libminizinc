@@ -662,6 +662,13 @@ namespace MiniZinc {
     GC* gc = GC::gc();
     return gc->_heap->_max_alloced_mem;
   }
+
+  // Force garbage collection, added by Nick for LCG-glucose backend
+  void
+  GC::run(void) {
+    GC* gc = GC::gc();
+    gc->_heap->rungc();
+  }
   
 
   void*
