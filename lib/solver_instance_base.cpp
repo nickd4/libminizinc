@@ -77,88 +77,77 @@ namespace MiniZinc {
 //     }
 //   }
   
-  void SolverInstanceBase2::assignSolutionToOutput() {
+  void SolverInstanceBase1::assignSolutionToOutput() {
     
     MZN_ASSERT_HARD_MSG( 0!=pS2Out, "Setup a Solns2Out object to use default solution extraction/reporting procs" );
-    
-    if ( _varsWithOutput.empty() ) {
-      for (VarDeclIterator it = getEnv()->flat()->begin_vardecls(); it != getEnv()->flat()->end_vardecls(); ++it) {
-        if(!it->removed()) {
-          VarDecl* vd = it->e();
-          if(!vd->ann().isEmpty()) {
-            if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
-                vd->ann().contains(constants().ann.output_var)
-              ) {
-              _varsWithOutput.push_back(vd);
-            }
-          }
-        }
-      }
-    }
     
     pS2Out->declNewOutput();  // Even for empty output decl
     
     //iterate over set of ids that have an output annotation && obtain their right hand side from the flat model
-    for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
-      VarDecl* vd = _varsWithOutput[i];
-      //std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
-      if(Call* output_array_ann = Expression::dyn_cast<Call>(getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
-        assert(vd->e());
-
-        if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
-          std::vector<Expression*> array_elems;
-          ASTExprVec<Expression> array = al->v();
-          for(unsigned int j=0; j<array.size(); j++) {
-            if(Id* id = array[j]->dyn_cast<Id>()) {
-              //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
-              array_elems.push_back(getSolutionValue(id));
-            } else if(FloatLit* floatLit = array[j]->dyn_cast<FloatLit>()) {
-              array_elems.push_back(floatLit);
-            } else if(IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
-              array_elems.push_back(intLit);
-            } else if(BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
-              array_elems.push_back(boolLit);
-            } else if(SetLit* setLit = array[j]->dyn_cast<SetLit>()) {
-              array_elems.push_back(setLit);
-            } else if(StringLit* strLit = array[j]->dyn_cast<StringLit>()) {
-              array_elems.push_back(strLit);
-            } else {
-              std::cerr << "Error: array element " << *array[j] << " is ! an id nor a literal" << std::endl;
-              assert(false);
+    for (VarDeclIterator it = getEnv()->flat()->begin_vardecls(); it != getEnv()->flat()->end_vardecls(); ++it) {
+      if(!it->removed()) {
+        VarDecl* vd = it->e();
+        if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
+            vd->ann().contains(constants().ann.output_var)
+          ) {
+          //std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
+          if(Call* output_array_ann = Expression::dyn_cast<Call>(getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
+            assert(vd->e());
+            if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+              std::vector<Expression*> array_elems;
+              ASTExprVec<Expression> array = al->v();
+              for(unsigned int i=0; i<array.size(); i++) {
+                if(Id* id = array[i]->dyn_cast<Id>()) {
+                  //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
+                  array_elems.push_back(getSolutionValue(id));
+                } else if(FloatLit* floatLit = array[i]->dyn_cast<FloatLit>()) {
+                  array_elems.push_back(floatLit);
+                } else if(IntLit* intLit = array[i]->dyn_cast<IntLit>()) {
+                  array_elems.push_back(intLit);
+                } else if(BoolLit* boolLit = array[i]->dyn_cast<BoolLit>()) {
+                  array_elems.push_back(boolLit);
+                } else if(SetLit* setLit = array[i]->dyn_cast<SetLit>()) {
+                  array_elems.push_back(setLit);
+                } else if(StringLit* strLit = array[i]->dyn_cast<StringLit>()) {
+                  array_elems.push_back(strLit);
+                } else {
+                  std::cerr << "Error: array element " << *array[i] << " is ! an id nor a literal" << std::endl;
+                  assert(false);
+                }
+              }
+              GCLock lock;
+              ArrayLit* dims;
+              Expression* e = output_array_ann->args()[0];
+              if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
+                dims = al;
+              } else if(Id* id = e->dyn_cast<Id>()) {
+                dims = id->decl()->e()->cast<ArrayLit>();
+              } else {
+                throw -1;
+              }
+              std::vector<std::pair<int,int> > dims_v;
+              for( int i=0;i<dims->length();i++) {
+                IntSetVal* isv = eval_intset(getEnv()->envi(), dims->v()[i]);
+                if (isv->size()==0) {
+                  dims_v.push_back(std::pair<int,int>(1,0));
+                } else {
+                  dims_v.push_back(std::pair<int,int>(isv->min().toInt(),isv->max().toInt()));
+                }
+              }
+              ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
+              KeepAlive ka(array_solution);
+              auto& de = getSolns2Out()->findOutputVar(vd->id()->str().str());
+              de.first->e(array_solution);
             }
+          } else if(vd->ann().contains(constants().ann.output_var)) {
+            Expression* sol = getSolutionValue(vd->id());
+            vd->e(sol);
+            auto& de = getSolns2Out()->findOutputVar(vd->id()->str().str());
+            de.first->e(sol);
           }
-          GCLock lock;
-          ArrayLit* dims;
-          Expression* e = output_array_ann->args()[0];
-          if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
-            dims = al;
-          } else if(Id* id = e->dyn_cast<Id>()) {
-            dims = id->decl()->e()->cast<ArrayLit>();
-          } else {
-            throw -1;
-          }
-          std::vector<std::pair<int,int> > dims_v;
-          for( int i=0;i<dims->length();i++) {
-            IntSetVal* isv = eval_intset(getEnv()->envi(), dims->v()[i]);
-            if (isv->size()==0) {
-              dims_v.push_back(std::pair<int,int>(1,0));
-            } else {
-              dims_v.push_back(std::pair<int,int>(isv->min().toInt(),isv->max().toInt()));
-            }
-          }
-          ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
-          KeepAlive ka(array_solution);
-          auto& de = getSolns2Out()->findOutputVar(vd->id()->str().str());
-          de.first->e(array_solution);
         }
-      } else if(vd->ann().contains(constants().ann.output_var)) {
-        Expression* sol = getSolutionValue(vd->id());
-        vd->e(sol);
-        auto& de = getSolns2Out()->findOutputVar(vd->id()->str().str());
-        de.first->e(sol);
       }
     }
-
   }
 
  void 

@@ -22,6 +22,9 @@ endif()
 if (DEFINED OSICBC_HOME AND NOT "${OSICBC_HOME} " STREQUAL " ")
   set(HAS_OSICBC TRUE)
 endif()
+if (DEFINED LCG_GLUCOSE_DIR)
+  set(HAS_LCG_GLUCOSE TRUE)
+endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 # The version number.
@@ -594,6 +597,45 @@ if(HAS_GECODE)
     DESTINATION include/minizinc/solvers
     )
 
+endif()
+
+# -------------------------------------------------------------------------------------------------------------------
+if(HAS_LCG_GLUCOSE)
+  link_directories("${LCG_GLUCOSE_DIR}/lib")
+
+  add_library(minizinc_lcg_glucose
+    solvers/lcg_glucose/lcg_glucose_solverinstance.cpp
+    solvers/lcg_glucose/fzn_solver.cpp
+  )
+
+  SET_TARGET_PROPERTIES(minizinc_lcg_glucose
+    PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG"
+  )
+
+  target_include_directories(minizinc_lcg_glucose PRIVATE
+    "${LCG_GLUCOSE_DIR}/include"
+  )
+
+  target_link_libraries(minizinc_lcg_glucose minizinc lcg_glucose)
+
+  add_executable(mzn-lcg_glucose minizinc.cpp)
+  target_compile_definitions(mzn-lcg_glucose PRIVATE HAS_LCG_GLUCOSE)
+  SET_TARGET_PROPERTIES(mzn-lcg_glucose
+    PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -Wall"
+  )
+
+  #if (BUILD_STATIC_EXECUTABLE)
+  #  SET_TARGET_PROPERTIES(mzn-lcg_glucose
+  #    PROPERTIES LINK_FLAGS "-static"
+  #  )
+  #endif()
+  target_include_directories(mzn-lcg_glucose PRIVATE "${LCG_GLUCOSE_DIR}/include")
+  target_link_libraries(mzn-lcg_glucose minizinc_lcg_glucose lcg_glucose)
+
+  INSTALL(TARGETS minizinc_lcg_glucose mzn-lcg_glucose
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------

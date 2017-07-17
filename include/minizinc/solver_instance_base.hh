@@ -86,7 +86,10 @@ namespace MiniZinc {
   };
 
   /// This implements a solver which is linked and returns its solution by assignSolutionToOutput()
-  class SolverInstanceBase2 : public SolverInstanceBase {
+  /// The solver has to call assignSolutionToOutput as each solution becomes available, allowing
+  /// that the resident solution at the end of solving won't be the best solution found anymore
+  /// The subclass must override getSolutionValue() to provide values from the resident solution
+  class SolverInstanceBase1 : public SolverInstanceBase {
   protected:
     virtual Expression* getSolutionValue(Id* id) = 0;
 
@@ -94,15 +97,23 @@ namespace MiniZinc {
     /// Assign output for all vars: need public for callbacks
     // Default impl requires a Solns2Out object set up
     virtual void assignSolutionToOutput();
-    /// Print solution to setup dest
-    virtual void printSolution();
-    
-  protected:
-    std::vector<VarDecl*> _varsWithOutput;    // this is to extract fzn vars. Identical to output()?  TODO
 
   public:
-    SolverInstanceBase2(Env& env, const Options& options=Options())
+    SolverInstanceBase1(Env& env, const Options& options=Options())
       : SolverInstanceBase(env, options) {}
+  };
+
+  /// This implements a solver which is linked and returns its solution by assignSolutionToOutput()
+  /// Same as SolverInstanceBase1 except that a call to assignSolutionToOutput() is inserted 
+  /// at start of printSolution(), for solvers like CPLEX that leave optimal solution resident
+  /// XXX the subclass should really do this as it's trivial, this class is for compatibility
+  class SolverInstanceBase2 : public SolverInstanceBase1 {
+  public:
+    /// Print solution to setup dest
+    virtual void printSolution();
+
+    SolverInstanceBase2(Env& env, const Options& options=Options())
+      : SolverInstanceBase1(env, options) {}
   };
   
   typedef void (*poster) (SolverInstanceBase&, const Call* call);

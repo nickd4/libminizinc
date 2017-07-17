@@ -434,17 +434,6 @@ void MIP_solverinstance::processFlatZinc(void) {
       continue;
     }
     VarDecl* vd = it->e();
-    if(!vd->ann().isEmpty()) {
-      if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
-          vd->ann().contains(constants().ann.output_var)
-        ) {
-        _varsWithOutput.push_back(vd);
-//         std::cerr << (*vd);
-//         if ( vd->e() )
-//           cerr << " = " << (*vd->e());
-//         cerr << endl;
-      }
-    }
     if (vd->type().dim() == 0 && it->e()->type().isvar() && !it->removed()) {
       MiniZinc::TypeInst* ti = it->e()->ti();
       MIP_wrapper::VarType vType = MIP_wrapper::VarType::REAL;     // fInt = false;

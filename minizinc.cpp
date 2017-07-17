@@ -59,6 +59,10 @@ int main(int argc, const char** argv) {
   /*static*/ unique_ptr<SolverFactory>
     pFactoryMIP( SolverFactory::createF_MIP() );
 #endif
+#ifdef HAS_LCG_GLUCOSE
+  static unique_ptr<SolverFactory>
+    pFactoryLCG_GLUCOSE( SolverFactory::createF_LCG_GLUCOSE() );
+#endif
 
   clock_t starttime = std::clock(), endTime;
   bool fSuccess = false;

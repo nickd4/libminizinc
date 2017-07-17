@@ -52,6 +52,7 @@ namespace MiniZinc {
     static SolverFactory* createF_GECODE();
     static SolverFactory* createF_MIP();
     static SolverFactory* createF_CHUFFED();
+    static SolverFactory* createF_LCG_GLUCOSE();
   protected:
     /// doCreateSI should be implemented to actually allocate a SolverInstance using new()
     virtual SolverInstanceBase * doCreateSI(Env&) = 0;
