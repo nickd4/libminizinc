@@ -63,6 +63,7 @@ namespace MiniZinc {
   }
 
   void SolverInstanceBase2::printSolution() {
+    GCLock lock;
     assignSolutionToOutput();
     SolverInstanceBase::printSolution();
   }
