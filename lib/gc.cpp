@@ -18,6 +18,8 @@
 #include <vector>
 #include <cstring>
 
+// Nick, define the below to maximize use of ::free() for LCG-glucose:
+#define REBUILD_FREE_LIST
 //#define MINIZINC_GC_STATS
 
 #if defined(MINIZINC_GC_STATS)
@@ -59,7 +61,9 @@ namespace MiniZinc {
       : ASTNode(ASTNode::NID_FL)
       , next(n)
       , size(s) {
+#if 0
       _gc_mark = 1;
+#endif
     }
     FreeListNode(size_t s) : ASTNode(ASTNode::NID_FL), next(NULL), size(s) {}
   };
@@ -157,6 +161,7 @@ namespace MiniZinc {
 #ifndef NDEBUG
       memset(newPage,255,sizeof(HeapPage)+s-1);
 #endif
+ //std::cerr << "malloc " << _alloced_mem << " -> " << (_alloced_mem + s) << "\n";
       _alloced_mem += s;
       _max_alloced_mem = std::max(_max_alloced_mem, _alloced_mem);
       _free_mem += s;
@@ -363,6 +368,7 @@ namespace MiniZinc {
 
   void
   GC::add(Model* m) {
+ //std::cerr << "adding " << m << "\n";
     GC* gc = GC::gc();
     if (gc->_heap->_rootset) {
       m->_roots_next = gc->_heap->_rootset;
@@ -376,6 +382,7 @@ namespace MiniZinc {
 
   void
   GC::remove(Model* m) {
+ //std::cerr << "removing " << m << "\n";
     GC* gc = GC::gc();
     if (m->_roots_next == m) {
       gc->_heap->_rootset = NULL;
@@ -526,11 +533,32 @@ namespace MiniZinc {
 #if defined(MINIZINC_GC_STATS)
     std::cerr << "=============== GC sweep =============\n";
 #endif
+#if defined(REBUILD_FREE_LIST)
+ _free_mem = 0;
+ for (int i=_max_fl+1; i--;)
+  _fl[i] = NULL;
+ size_t _free_mem_save;
+ FreeListNode* _fl_save[_max_fl+1];
+//#if defined(MINIZINC_GC_STATS)
+// std::map<int,GCStat> gc_stats_save;
+//#endif
+#endif
     HeapPage* p = _page;
     HeapPage* prev = NULL;
     while (p) {
       size_t off = 0;
+#if defined(REBUILD_FREE_LIST)
+ // if nothing on the page is marked, we are going to undo the addition
+ // of all the nodes on the page onto free lists, and then dump the page
+ _free_mem_save = _free_mem;
+ memcpy(_fl_save, _fl, (_max_fl+1) * sizeof(FreeListNode*));
+//#if defined(MINIZINC_GC_STATS)
+// gc_stats_save = gc_stats;
+//#endif
+ bool wholepage = true;
+#else
       bool wholepage = false;
+#endif
       while (off < p->used) {
         ASTNode* n = reinterpret_cast<ASTNode*>(p->data+off);
         size_t ns = nodesize(n);
@@ -561,26 +589,46 @@ namespace MiniZinc {
             FreeListNode* fln = static_cast<FreeListNode*>(n);
             new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
             _fl[_fl_slot(ns)] = fln;
+#if !defined(REBUILD_FREE_LIST)
             _free_mem += ns;
+#endif
 #if defined(MINIZINC_GC_STATS)
             gc_stats[fln->_id].second++;
 #endif
+#if !defined(REBUILD_FREE_LIST)
             assert(_alloced_mem >= _free_mem);
-          } else {
+#endif
+          }
+#if defined(REBUILD_FREE_LIST)
+ _free_mem += ns;
+#else
+          else {
             assert(off==0);
             assert(p->used==p->size);
             wholepage = true;
           }
+#endif
         } else {
 #if defined(MINIZINC_GC_STATS)
           stats.second++;
 #endif
+#if defined(REBUILD_FREE_LIST)
+ wholepage = false;
+#else
           if (n->_id != ASTNode::NID_FL)
+#endif
             n->_gc_mark=0;
         }
         off += ns;
       }
       if (wholepage) {
+#if defined(REBUILD_FREE_LIST)
+ _free_mem = _free_mem_save;
+ memcpy(_fl, _fl_save, (_max_fl+1) * sizeof(FreeListNode*));
+//#if defined(MINIZINC_GC_STATS)
+// gc_stats = gc_stats_save;
+//#endif
+#endif
 #ifndef NDEBUG
         memset(p->data,42,p->size);
 #endif
@@ -592,14 +640,21 @@ namespace MiniZinc {
         }
         HeapPage* pf = p;
         p = p->next;
+ //std::cerr << "free " << _alloced_mem << " -> " << (_alloced_mem - pf->size) << "\n";
         _alloced_mem -= pf->size;
+#if !defined(REBUILD_FREE_LIST)
         assert(_alloced_mem >= _free_mem);
+#endif
         ::free(pf);
       } else {
         prev = p;
         p = p->next;
       }
     }
+#if defined(REBUILD_FREE_LIST)
+ if (_page)
+  _free_mem += _page->size - _page->used;
+#endif
 #if defined(MINIZINC_GC_STATS)
     for (auto stat: gc_stats) {
       std::cerr << _nodeid[stat.first] << ":\t" << stat.second.first << " / " << stat.second.second
