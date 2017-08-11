@@ -30,12 +30,16 @@ namespace MiniZinc {
   
   GC*&
   GC::gc(void) {
+#if 1 // Nick, for LCG-glucose we need garbage collector NOT to be thread-local
+ static GC* gc = NULL;
+#else
 #if defined(HAS_DECLSPEC_THREAD)
     __declspec (thread) static GC* gc = NULL;
 #elif defined(HAS_ATTR_THREAD)
     static __thread GC* gc = NULL;
 #else
 #error Need thread-local storage
+#endif
 #endif
     return gc;
   }
@@ -148,7 +152,11 @@ namespace MiniZinc {
     }
 
     /// Default size of pages to allocate
+#if 1 // Nick, use a smaller block size to improve reclamation to LCG-glucose
+    static const size_t pageSize = 1<<16;
+#else
     static const size_t pageSize = 1<<20;
+#endif
     
     HeapPage* allocPage(size_t s, bool exact=false) {
       if (!exact)
@@ -736,6 +744,7 @@ namespace MiniZinc {
 
   void
   GC::addKeepAlive(KeepAlive* e) {
+ //std::cerr << "addKeepAlive " << e << " _roots " << GC::gc()->_heap->_roots << "\n";
     assert(e->_p==NULL);
     assert(e->_n==NULL);
     e->_n = GC::gc()->_heap->_roots;
@@ -745,6 +754,7 @@ namespace MiniZinc {
   }
   void
   GC::removeKeepAlive(KeepAlive* e) {
+ //std::cerr << "removeKeepAlive " << e << "(" << e->_p << "," << e->_n << ") _roots " << GC::gc()->_heap->_roots << "\n";
     if (e->_p) {
       e->_p->_n = e->_n;
     } else {
