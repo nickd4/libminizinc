@@ -416,6 +416,7 @@ namespace MiniZinc {
 
     for (KeepAlive* e = _roots; e != NULL; e = e->next()) {
       if ((*e)() && (*e)()->_gc_mark==0) {
+ //std::cerr << "ka " << e << "\n";
         Expression::mark((*e)());
 #if defined(MINIZINC_GC_STATS)
         gc_stats[(*e)()->_id].keepalive++;
@@ -430,6 +431,7 @@ namespace MiniZinc {
     if (m==NULL)
       return;
     do {
+ //std::cerr << "m " << m << "\n";
       m->_filepath.mark();
       m->_filename.mark();
       for (unsigned int j=0; j<m->_items.size(); j++) {
@@ -722,6 +724,7 @@ namespace MiniZinc {
   void
   GC::run(void) {
     GC* gc = GC::gc();
+ gc->_heap->_gc_threshold = 0; // really force garbage collection (whoops)
     gc->_heap->rungc();
   }
   
