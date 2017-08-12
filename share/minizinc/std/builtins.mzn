@@ -359,7 +359,7 @@ function var int: pow(var int: x, var int: y) =
   if yy = 0 then 1
   elseif yy = 1 then x else
   let { var int: r;
-        constraint int_pow(x,y,r);
+        constraint int_pow(x,y,r) ::defines_var(r);
   } in r
   endif;
 
@@ -375,7 +375,7 @@ function var float: pow(var float: x, var float: y) =
   if yy = 0.0 then 1.0
   elseif yy = 1.0 then x else
   let { var float: r;
-        constraint float_pow(x,y,r);
+        constraint float_pow(x,y,r) ::defines_var(r);
   } in r
   endif;
 
